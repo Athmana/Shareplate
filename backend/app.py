@@ -47,6 +47,7 @@ _allowed_origins = [
     "http://127.0.0.1:5000",
     "null",  # file:// origin when opening index.html directly
     "https://shareplate-backend-cy5x.onrender.com",
+    "https://fastidious-smakager-6d7b1e.netlify.app",
 ]
 _frontend_url = os.environ.get("FRONTEND_URL", "")
 if _frontend_url:
