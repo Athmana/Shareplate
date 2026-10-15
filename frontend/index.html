@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SharePlate AI — Food Waste Prevention & Redistribution</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --surface2:  #222535;
+      --border:    #2e3347;
+      --text:      #e2e8f0;
+      --muted:     #8892a4;
+      --accent:    #4ade80;
+      --accent2:   #60a5fa;
+      --warn:      #fb923c;
+      --danger:    #f87171;
+      --gold:      #fbbf24;
+      --radius:    10px;
+      --font:      -apple-system, "Segoe UI", system-ui, sans-serif;
+    }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.6; }
+    .app { display: flex; height: 100vh; overflow: hidden; }
+
+    /* Sidebar */
+    .sidebar { width: 230px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+    .sidebar-logo { padding: 20px 18px 16px; border-bottom: 1px solid var(--border); }
+    .logo-mark { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+    .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .logo-text { font-size: 16px; font-weight: 700; }
+    .logo-sub  { font-size: 10px; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; }
+    .sdg-badge { margin-top: 8px; display: inline-flex; align-items: center; gap: 5px; background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.25); border-radius: 20px; padding: 3px 10px; font-size: 10px; color: var(--accent); font-weight: 600; }
+    .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0; }
+    .nav-section { padding: 6px 18px 4px; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 18px; cursor: pointer; color: var(--muted); font-size: 13px; transition: all 0.15s; border-left: 3px solid transparent; }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: rgba(74,222,128,0.08); color: var(--accent); border-left-color: var(--accent); }
+    .nav-icon { font-size: 15px; width: 18px; text-align: center; }
+    .sidebar-inst { padding: 12px 18px; border-top: 1px solid var(--border); }
+    .inst-label { font-size: 10px; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+    .inst-select { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+
+    /* Main */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .topbar { padding: 14px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); flex-shrink: 0; }
+    .topbar-title { font-size: 17px; font-weight: 700; }
+    .topbar-sub   { font-size: 12px; color: var(--muted); }
+    .topbar-actions { display: flex; gap: 10px; }
+    .btn { padding: 7px 16px; border-radius: 7px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: opacity 0.15s; }
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary   { background: var(--accent);  color: #0f1117; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-warn      { background: var(--warn);    color: #0f1117; }
+    .btn-danger    { background: var(--danger);  color: #0f1117; }
+    .btn-sm { padding: 4px 12px; font-size: 12px; }
+    .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+    /* Cards */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 18px; }
+    .card-title { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .card-title span { font-size: 15px; }
+
+    /* Stats */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+    .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .stat-value { font-size: 26px; font-weight: 800; line-height: 1.1; }
+    .stat-sub   { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .stat-green { color: var(--accent); }
+    .stat-blue  { color: var(--accent2); }
+    .stat-orange{ color: var(--warn); }
+    .stat-red   { color: var(--danger); }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 8px 12px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); background: var(--surface2); font-weight: 600; }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    /* Badge */
+    .badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-safe       { background: rgba(74,222,128,0.15);  color: var(--accent); }
+    .badge-marginal   { background: rgba(251,191,36,0.15);  color: var(--gold); }
+    .badge-unsafe     { background: rgba(248,113,113,0.15); color: var(--danger); }
+    .badge-matched    { background: rgba(96,165,250,0.15);  color: var(--accent2); }
+    .badge-dispatched { background: rgba(251,146,60,0.15);  color: var(--warn); }
+    .badge-delivered  { background: rgba(74,222,128,0.15);  color: var(--accent); }
+    .badge-rejected   { background: rgba(248,113,113,0.15); color: var(--danger); }
+    .badge-pending    { background: rgba(156,163,175,0.15); color: #9ca3af; }
+    .badge-info       { background: rgba(96,165,250,0.15);  color: var(--accent2); }
+
+    /* Bar chart */
+    .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+    .bar-row { display: flex; align-items: center; gap: 12px; }
+    .bar-label { width: 130px; font-size: 12px; color: var(--muted); text-align: right; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar-track { flex: 1; background: var(--surface2); border-radius: 4px; height: 20px; position: relative; overflow: hidden; }
+    .bar-fill  { height: 100%; border-radius: 4px; transition: width 0.6s ease; display: flex; align-items: center; padding-left: 8px; }
+    .bar-fill-orange { background: linear-gradient(90deg, var(--warn), #fdba74); }
+    .bar-fill-green  { background: linear-gradient(90deg, var(--accent), #86efac); }
+    .bar-value { font-size: 11px; font-weight: 700; color: #0f1117; }
+    .bar-pct   { width: 45px; font-size: 12px; color: var(--muted); text-align: right; flex-shrink: 0; }
+
+    /* Forecast cards */
+    .forecast-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .forecast-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+    .fc-item   { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    .fc-qty    { font-size: 22px; font-weight: 800; color: var(--accent2); }
+    .fc-unit   { font-size: 11px; color: var(--muted); }
+    .fc-conf   { margin-top: 8px; }
+    .conf-bar  { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 3px; }
+    .conf-fill { height: 100%; border-radius: 2px; background: var(--accent); }
+    .fc-reason { font-size: 10px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
+
+    /* Reasoning box */
+    .reasoning-box { background: var(--surface2); border: 1px solid var(--border); border-left: 3px solid var(--accent2); border-radius: 6px; padding: 12px 14px; font-size: 12px; color: var(--muted); white-space: pre-wrap; font-family: "Courier New", monospace; line-height: 1.5; max-height: 300px; overflow-y: auto; }
+
+    /* Insights */
+    .insight-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+    .insight-item:last-child { border-bottom: none; }
+    .insight-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .insight-over  { background: rgba(248,113,113,0.15); }
+    .insight-under { background: rgba(251,146,60,0.15); }
+    .insight-ok    { background: rgba(74,222,128,0.15); }
+    .insight-title { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+    .insight-rec   { font-size: 12px; color: var(--muted); }
+    .insight-meta  { display: flex; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
+
+    /* Forms */
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+    .form-group input, .form-group select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 8px 10px; font-size: 13px; width: 100%; }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent2); }
+    .form-group input[type="checkbox"] { width: auto; }
+    .form-row { display: flex; align-items: center; gap: 8px; }
+    .form-actions { display: flex; gap: 10px; margin-top: 16px; align-items: center; }
+    .form-result { margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 13px; }
+    .form-result.success { background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.25); color: var(--accent); }
+    .form-result.error   { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.25); color: var(--danger); }
+    .form-result.info    { background: rgba(96,165,250,0.1);  border: 1px solid rgba(96,165,250,0.25);  color: var(--accent2); }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; width: min(800px, 100%); max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; }
+    .modal-header { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .modal-title { font-size: 16px; font-weight: 700; }
+    .modal-body  { padding: 22px; overflow-y: auto; flex: 1; }
+    .modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; }
+    .modal-close:hover { color: var(--text); }
+
+    /* Loading */
+    .loading { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 40px; color: var(--muted); font-size: 14px; }
+    .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Misc */
+    .section-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 900px) { .section-row { grid-template-columns: 1fr; } }
+    .empty-state { text-align: center; padding: 32px; color: var(--muted); }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; background: var(--surface2); color: var(--muted); margin: 2px; }
+    .text-green  { color: var(--accent); }
+    .text-blue   { color: var(--accent2); }
+    .text-orange { color: var(--warn); }
+    .text-red    { color: var(--danger); }
+    .text-muted  { color: var(--muted); }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .notif-bar { padding: 10px 24px; background: rgba(74,222,128,0.1); border-bottom: 1px solid rgba(74,222,128,0.2); font-size: 12px; color: var(--accent); display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .notif-bar.warn { background: rgba(251,146,60,0.1); border-color: rgba(251,146,60,0.2); color: var(--warn); }
+    .hidden { display: none !important; }
+    hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+    .section-title { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; margin-top: 4px; }
+    .collapsible-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+    .collapsible-header:hover .collapse-arrow { color: var(--text); }
+    .collapse-arrow { font-size: 12px; color: var(--muted); transition: transform 0.2s; }
+    .collapse-arrow.open { transform: rotate(180deg); }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <div class="logo-icon">🍽</div>
+        <div class="logo-text">SharePlate AI</div>
+      </div>
+      <div class="logo-sub">Food Waste Prevention System</div>
+      <div class="sdg-badge">🌱 SDG 2 · SDG 12</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Overview</div>
+      <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')"><span class="nav-icon">📊</span> Dashboard</div>
+      <div class="nav-section">AI Modules</div>
+      <div class="nav-item" data-page="forecast" onclick="navigate('forecast')"><span class="nav-icon">🔮</span> Demand Forecast</div>
+      <div class="nav-item" data-page="log" onclick="navigate('log')"><span class="nav-icon">📝</span> Log Meal Record</div>
+      <div class="nav-item" data-page="surplus" onclick="navigate('surplus')"><span class="nav-icon">⚠️</span> Surplus Alerts</div>
+      <div class="nav-item" data-page="agent" onclick="navigate('agent')"><span class="nav-icon">🤖</span> Agent Tasks</div>
+      <div class="nav-section">Learning</div>
+      <div class="nav-item" data-page="insights" onclick="navigate('insights')"><span class="nav-icon">💡</span> Learning Insights</div>
+      <div class="nav-item" data-page="report" onclick="navigate('report')"><span class="nav-icon">📈</span> Impact Report</div>
+      <div class="nav-section">Data</div>
+      <div class="nav-item" data-page="recipients" onclick="navigate('recipients')"><span class="nav-icon">🏠</span> Recipients</div>
+    </nav>
+    <div class="sidebar-inst">
+      <div class="inst-label">Institution</div>
+      <select class="inst-select" id="instSelect" onchange="switchInstitution(this.value)">
+        <option value="inst_001">NIT Trichy Main Mess</option>
+        <option value="inst_002">BITS Pilani Hostel Mess</option>
+        <option value="inst_003">Green Leaf Restaurant</option>
+      </select>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="pageTitle">Dashboard</div>
+        <div class="topbar-sub" id="pageSub">Real-time food intelligence</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-secondary btn-sm" onclick="refreshData()">↻ Refresh</button>
+        <button class="btn btn-primary btn-sm" onclick="runDemo()">▶ Run Demo</button>
+      </div>
+    </div>
+    <div id="notifBar" class="notif-bar hidden"></div>
+    <div class="content" id="content">
+      <div class="loading"><div class="spinner"></div> Loading SharePlate AI…</div>
+    </div>
+  </div>
+</div>
+
+<!-- Demo Modal -->
+<div id="demoModal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🤖 Agentic Demo — Full Workflow Run</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="demoContent">
+      <div class="loading"><div class="spinner"></div> Running AI workflow…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+const API = (typeof window.SHAREPLATE_API_URL !== 'undefined') ? window.SHAREPLATE_API_URL : 'http://127.0.0.1:5000';
+let currentPage = 'dashboard';
+let currentInst = 'inst_001';
+let dashboardData = null;
+
+const MENU_ITEMS = {
+  rice:    { name: 'Steamed Rice',          unit: 'portions', shelf: 4.0 },
+  dal:     { name: 'Dal (Lentil Soup)',      unit: 'litres',   shelf: 3.5 },
+  paneer:  { name: 'Paneer Curry',          unit: 'portions', shelf: 3.0 },
+  chicken: { name: 'Chicken Gravy',         unit: 'portions', shelf: 3.0 },
+  sabzi:   { name: 'Mixed Vegetable Sabzi', unit: 'portions', shelf: 3.5 },
+  chapati: { name: 'Chapati/Roti',          unit: 'pieces',   shelf: 2.5 },
+  salad:   { name: 'Garden Salad',          unit: 'portions', shelf: 2.0 },
+  khichdi: { name: 'Khichdi',               unit: 'portions', shelf: 3.5 },
+  poha:    { name: 'Poha (Breakfast)',      unit: 'portions', shelf: 2.5 },
+  idli:    { name: 'Idli & Sambar',         unit: 'pieces',   shelf: 3.0 },
+  dessert: { name: 'Gulab Jamun',           unit: 'pieces',   shelf: 6.0 },
+};
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function navigate(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
+  const titles = {
+    dashboard: ['Dashboard',          'Real-time food intelligence'],
+    forecast:  ['Demand Forecast',    'AI-predicted meal demand with controls'],
+    log:       ['Log Meal Record',    'Enter actual prepared & consumed quantities'],
+    surplus:   ['Surplus Alerts',     'Detected surplus with food safety classification'],
+    agent:     ['Agent Tasks',        'Autonomous redistribution coordinator'],
+    insights:  ['Learning Insights',  'Feedback-driven improvement recommendations'],
+    report:    ['Impact Report',      'Waste reduction & SDG impact'],
+    recipients:['Recipients',         'Registered food redistribution partners'],
+  };
+  const [title, sub] = titles[page] || ['SharePlate AI', ''];
+  document.getElementById('pageTitle').textContent = title;
+  document.getElementById('pageSub').textContent = sub;
+  loadPage(page);
+}
+
+function switchInstitution(id) {
+  currentInst = id;
+  dashboardData = null;
+  loadPage(currentPage);
+}
+
+function refreshData() {
+  dashboardData = null;
+  loadPage(currentPage);
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function api(path) {
+  const r = await fetch(API + path);
+  if (!r.ok) throw new Error(`API error: ${r.status}`);
+  return r.json();
+}
+async function apiPost(path, body = {}) {
+  const r = await fetch(API + path, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (!r.ok) throw new Error(`API error: ${r.status}`);
+  return r.json();
+}
+
+function setContent(html) { document.getElementById('content').innerHTML = html; }
+
+function showNotif(msg, type = 'success') {
+  const bar = document.getElementById('notifBar');
+  bar.textContent = msg;
+  bar.className = 'notif-bar' + (type === 'warn' ? ' warn' : '');
+  bar.classList.remove('hidden');
+  setTimeout(() => bar.classList.add('hidden'), 5000);
+}
+
+// ── Page Loader ───────────────────────────────────────────────────────────────
+async function loadPage(page) {
+  setContent('<div class="loading"><div class="spinner"></div> Loading…</div>');
+  try {
+    if      (page === 'dashboard') await loadDashboard();
+    else if (page === 'forecast')  await loadForecast();
+    else if (page === 'log')       loadLogMeal();
+    else if (page === 'surplus')   await loadSurplus();
+    else if (page === 'agent')     await loadAgent();
+    else if (page === 'insights')  await loadInsights();
+    else if (page === 'report')    await loadReport();
+    else if (page === 'recipients')await loadRecipients();
+  } catch(e) {
+    setContent(`<div class="card"><div class="card-title">⚠ Connection Error</div>
+      <p style="color:var(--muted)">Could not reach the backend at <strong>${API}</strong>.</p>
+      <p style="color:var(--muted);margin-top:8px">Run: <code style="background:var(--surface2);padding:2px 8px;border-radius:4px">cd backend &amp;&amp; python app.py</code></p>
+      <p style="color:var(--muted);margin-top:8px;font-size:12px">Error: ${e.message}</p>
+    </div>`);
+  }
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  if (!dashboardData) dashboardData = await api(`/api/dashboard/${currentInst}`);
+  const d = dashboardData, s = d.summary;
+  const wasteChart = d.waste_chart.slice(0, 8);
+  const maxWaste = Math.max(...wasteChart.map(w => w.wasted), 1);
+
+  setContent(`
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Total Prepared</div><div class="stat-value stat-blue">${s.total_prepared.toLocaleString()}</div><div class="stat-sub">portions this period</div></div>
+      <div class="stat-card"><div class="stat-label">Total Consumed</div><div class="stat-value stat-green">${s.total_consumed.toLocaleString()}</div><div class="stat-sub">${((s.total_consumed/s.total_prepared)*100).toFixed(1)}% utilisation</div></div>
+      <div class="stat-card"><div class="stat-label">Food Wasted</div><div class="stat-value stat-red">${s.total_wasted.toLocaleString()}</div><div class="stat-sub">${s.waste_rate_pct}% waste rate</div></div>
+      <div class="stat-card"><div class="stat-label">Agent Tasks</div><div class="stat-value stat-orange">${s.tasks_total}</div><div class="stat-sub">${s.tasks_delivered} delivered · ${s.tasks_matched} matched</div></div>
+      <div class="stat-card"><div class="stat-label">CO₂ Saved</div><div class="stat-value stat-green">${d.report.co2_saved_kg}</div><div class="stat-sub">kg CO₂e via redistribution</div></div>
+      <div class="stat-card"><div class="stat-label">Meals Saved</div><div class="stat-value stat-green">${d.report.estimated_meals_saved}</div><div class="stat-sub">portions redistributed</div></div>
+    </div>
+
+    <div class="section-row">
+      <div class="card">
+        <div class="card-title"><span>🔮</span> Today's Forecast — Lunch</div>
+        <div class="forecast-grid">
+          ${d.todays_forecast.map(f => `
+            <div class="forecast-card">
+              <div class="fc-item">${f.item_name}</div>
+              <div><span class="fc-qty">${f.predicted_qty}</span> <span class="fc-unit">${f.meal_type}</span></div>
+              <div class="fc-conf">
+                <span style="font-size:11px;color:var(--muted)">Confidence: ${f.confidence_pct}</span>
+                <div class="conf-bar"><div class="conf-fill" style="width:${f.confidence*100}%"></div></div>
+              </div>
+              <div class="fc-reason">${f.reasoning.split('|')[0].trim()}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>📊</span> Waste by Item</div>
+        <div class="bar-chart">
+          ${wasteChart.map(w => `
+            <div class="bar-row">
+              <div class="bar-label">${w.item}</div>
+              <div class="bar-track"><div class="bar-fill bar-fill-orange" style="width:${maxWaste>0?(w.wasted/maxWaste*100):0}%"><span class="bar-value">${w.wasted > 5 ? w.wasted : ''}</span></div></div>
+              <div class="bar-pct">${w.waste_pct}%</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="section-row">
+      <div class="card">
+        <div class="card-title"><span>🤖</span> Recent Agent Tasks</div>
+        ${d.recent_tasks.length === 0
+          ? '<div class="empty-state">No tasks yet — log a meal or run the demo.</div>'
+          : `<div class="table-wrap"><table>
+              <thead><tr><th>Item</th><th>Qty</th><th>Recipient</th><th>Status</th></tr></thead>
+              <tbody>${d.recent_tasks.slice(-6).reverse().map(t => `
+                <tr>
+                  <td>${t.item_name}</td>
+                  <td>${t.qty} ${t.unit}</td>
+                  <td>${t.matched_recipient_name || '—'}</td>
+                  <td><span class="badge badge-${t.status}">${t.status}</span></td>
+                </tr>`).join('')}</tbody>
+            </table></div>`
+        }
+      </div>
+      <div class="card">
+        <div class="card-title"><span>💡</span> Top Learning Insights</div>
+        ${d.report.insights.slice(0, 3).map(i => `
+          <div class="insight-item">
+            <div class="insight-icon ${i.bias_direction === 'over-preparation' ? 'insight-over' : i.bias_direction === 'under-preparation' ? 'insight-under' : 'insight-ok'}">
+              ${i.bias_direction === 'over-preparation' ? '📉' : i.bias_direction === 'under-preparation' ? '📈' : '✅'}
+            </div>
+            <div>
+              <div class="insight-title">${i.item_name}</div>
+              <div class="insight-rec">${i.recommendation}</div>
+              <div class="insight-meta">
+                <span class="badge badge-info">${i.total_records} records</span>
+                <span class="badge ${i.bias_direction === 'accurate' ? 'badge-safe' : 'badge-marginal'}">${i.avg_error_pct}% MAPE</span>
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    ${d.active_surplus_alerts.length > 0 ? `
+    <div class="card" style="border-color:rgba(251,146,60,0.4)">
+      <div class="card-title" style="color:var(--warn)"><span>⚠️</span> Active Surplus Alerts (${d.active_surplus_alerts.length})</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Item</th><th>Qty</th><th>Safety</th><th>Safe Until</th><th>Action</th></tr></thead>
+        <tbody>${d.active_surplus_alerts.map(a => `
+          <tr>
+            <td><strong>${a.item_name}</strong></td>
+            <td>${a.surplus_qty} ${a.unit}</td>
+            <td><span class="badge badge-${a.safety_status}">${a.safety_status}</span></td>
+            <td style="font-size:12px">${new Date(a.safe_until).toLocaleTimeString()}</td>
+            <td><button class="btn btn-primary btn-sm" onclick="triggerAgent('${a.id}')">▶ Assign Agent</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>
+    </div>` : ''}
+  `);
+}
+
+// ── Forecast Page ─────────────────────────────────────────────────────────────
+async function loadForecast() {
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const dow = today.getDay() === 0 ? 6 : today.getDay() - 1;
+
+  setContent(`
+    <div class="card" style="background:rgba(96,165,250,0.06);border-color:rgba(96,165,250,0.2);margin-bottom:20px">
+      <div class="card-title collapsible-header" onclick="toggleCollapse('fcControls','fcArrow')">
+        <span><span>⚙️</span> Forecast Controls</span>
+        <span class="collapse-arrow open" id="fcArrow">▼</span>
+      </div>
+      <div id="fcControls">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="fc_date" value="${todayStr}" />
+          </div>
+          <div class="form-group">
+            <label>Meal Type</label>
+            <select id="fc_meal">
+              <option value="breakfast">Breakfast</option>
+              <option value="lunch" selected>Lunch</option>
+              <option value="dinner">Dinner</option>
+              <option value="snack">Snack</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Weather</label>
+            <select id="fc_weather">
+              <option value="normal" selected>Normal</option>
+              <option value="rainy">Rainy</option>
+              <option value="hot">Hot</option>
+            </select>
+          </div>
+          <div class="form-group" style="justify-content:flex-end">
+            <label>&nbsp;</label>
+            <div class="form-row">
+              <input type="checkbox" id="fc_event" />
+              <label for="fc_event" style="text-transform:none;font-size:13px;cursor:pointer">Special Event</label>
+            </div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="fetchForecast()">🔮 Generate Forecast</button>
+        </div>
+      </div>
+    </div>
+    <div id="fcResults"><div class="loading"><div class="spinner"></div> Fetching forecasts…</div></div>
+  `);
+
+  await fetchForecast();
+}
+
+async function fetchForecast() {
+  const date    = document.getElementById('fc_date')?.value || new Date().toISOString().split('T')[0];
+  const meal    = document.getElementById('fc_meal')?.value || 'lunch';
+  const weather = document.getElementById('fc_weather')?.value || 'normal';
+  const event   = document.getElementById('fc_event')?.checked ? 'true' : 'false';
+  const d = new Date(date);
+  const dow = d.getDay() === 0 ? 6 : d.getDay() - 1;
+  const el = document.getElementById('fcResults');
+  if (!el) return;
+  el.innerHTML = '<div class="loading"><div class="spinner"></div> Generating AI forecast…</div>';
+  try {
+    const forecasts = await api(`/api/institutions/${currentInst}/forecast?meal_type=${meal}&dow=${dow}&date=${date}&special_event=${event}&weather=${weather}`);
+    if (forecasts.length === 0) {
+      el.innerHTML = '<div class="card"><div class="empty-state">No historical data for this meal type at this institution.</div></div>';
+      return;
+    }
+    el.innerHTML = `
+      <div class="card">
+        <div class="card-title"><span>🔮</span> ${meal.charAt(0).toUpperCase()+meal.slice(1)} Forecast — ${date}
+          ${event==='true'?'<span class="badge badge-marginal" style="margin-left:8px">Special Event</span>':''}
+          ${weather!=='normal'?`<span class="badge badge-info" style="margin-left:6px">${weather}</span>`:''}
+        </div>
+        <div class="forecast-grid">
+          ${forecasts.map(f => `
+            <div class="forecast-card">
+              <div class="fc-item">${f.item_name}</div>
+              <div><span class="fc-qty">${f.predicted_qty}</span> <span class="fc-unit">portions</span></div>
+              <div class="fc-conf">
+                <span style="font-size:11px;color:var(--muted)">Confidence: ${f.confidence_pct}</span>
+                <div class="conf-bar"><div class="conf-fill" style="width:${f.confidence*100}%"></div></div>
+              </div>
+              <div class="fc-reason">${f.reasoning}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="card" style="background:rgba(74,222,128,0.04);border-color:rgba(74,222,128,0.15)">
+        <div class="card-title"><span>🧠</span> How This Works</div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.7">
+          The forecaster uses a <strong style="color:var(--text)">recency-weighted average</strong> over historical records for this institution and meal type.
+          Factors applied: day-of-week pattern (±20%), special event boost (+18%), weather adjustment (rainy −10%), and learned bias corrections from the feedback loop.
+          Confidence reflects how much historical data exists for this item.
+        </p>
+      </div>
+    `;
+  } catch(e) {
+    el.innerHTML = `<div class="form-result error">⚠ Error fetching forecast: ${e.message}</div>`;
+  }
+}
+
+function toggleCollapse(id, arrowId) {
+  const el = document.getElementById(id);
+  const arrow = document.getElementById(arrowId);
+  if (!el) return;
+  const hidden = el.style.display === 'none';
+  el.style.display = hidden ? '' : 'none';
+  if (arrow) arrow.classList.toggle('open', hidden);
+}
+
+// ── Log Meal Record Page ──────────────────────────────────────────────────────
+function loadLogMeal() {
+  const today = new Date().toISOString().split('T')[0];
+  const itemOptions = Object.entries(MENU_ITEMS).map(([id, m]) =>
+    `<option value="${id}">${m.name} (${m.unit})</option>`).join('');
+
+  setContent(`
+    <div class="card" style="background:rgba(74,222,128,0.06);border-color:rgba(74,222,128,0.2)">
+      <div style="font-size:13px;color:var(--muted)">
+        Enter the actual quantities prepared and consumed after a meal. The system will automatically
+        calculate surplus, classify food safety, and optionally run the redistribution agent.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>📝</span> Post-Meal Record Entry</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="log_date" value="${today}" />
+        </div>
+        <div class="form-group">
+          <label>Meal Type</label>
+          <select id="log_meal">
+            <option value="breakfast">Breakfast</option>
+            <option value="lunch" selected>Lunch</option>
+            <option value="dinner">Dinner</option>
+            <option value="snack">Snack</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Food Item</label>
+          <select id="log_item" onchange="updateLogUnit()">${itemOptions}</select>
+        </div>
+        <div class="form-group">
+          <label>Unit</label>
+          <input type="text" id="log_unit" value="portions" readonly style="opacity:0.6" />
+        </div>
+        <div class="form-group">
+          <label>Qty Prepared</label>
+          <input type="number" id="log_prepared" placeholder="e.g. 250" min="1" step="1" />
+        </div>
+        <div class="form-group">
+          <label>Qty Consumed</label>
+          <input type="number" id="log_consumed" placeholder="e.g. 210" min="0" step="1" />
+        </div>
+        <div class="form-group">
+          <label>Weather</label>
+          <select id="log_weather">
+            <option value="normal" selected>Normal</option>
+            <option value="rainy">Rainy</option>
+            <option value="hot">Hot</option>
+          </select>
+        </div>
+        <div class="form-group" style="justify-content:flex-end">
+          <label>&nbsp;</label>
+          <div class="form-row">
+            <input type="checkbox" id="log_event" />
+            <label for="log_event" style="text-transform:none;font-size:13px;cursor:pointer">Special Event</label>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider" />
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">
+        <strong style="color:var(--text)">Surplus threshold:</strong> ≥ 5 portions.
+        <strong style="color:var(--text)">Auto-assign agent:</strong> enabled — agent will immediately find a recipient.
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" id="logSubmitBtn" onclick="submitMealLog()">📤 Submit & Detect Surplus</button>
+        <button class="btn btn-secondary" onclick="prefillExample()">📋 Fill Example</button>
+        <span id="logSpinner" class="hidden"><div class="spinner" style="width:16px;height:16px"></div></span>
+      </div>
+      <div id="logResult"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>💡</span> What Happens Next</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px">
+        ${[
+          ['1. Calculate Surplus','Prepared − Consumed = Surplus. Must be ≥ 5 portions to proceed.','stat-blue'],
+          ['2. Safety Check','Food is classified SAFE / MARGINAL / UNSAFE based on shelf life and preparation time.','stat-orange'],
+          ['3. Agent Matching','The redistribution agent scores all recipients and picks the best match.','stat-green'],
+          ['4. Task Created','A redistribution task is logged. You can dispatch and track it under Agent Tasks.','stat-blue'],
+        ].map(([title, desc, cls]) => `
+          <div style="background:var(--surface2);border-radius:8px;padding:14px">
+            <div style="font-weight:700;font-size:12px;margin-bottom:6px" class="${cls}">${title}</div>
+            <div style="font-size:12px;color:var(--muted)">${desc}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+  `);
+}
+
+function updateLogUnit() {
+  const item = document.getElementById('log_item')?.value;
+  const unit = MENU_ITEMS[item]?.unit || 'portions';
+  const el = document.getElementById('log_unit');
+  if (el) el.value = unit;
+}
+
+function prefillExample() {
+  const examples = {
+    inst_001: { item: 'rice', prepared: 300, consumed: 245 },
+    inst_002: { item: 'dal',  prepared: 420, consumed: 350 },
+    inst_003: { item: 'chicken', prepared: 90, consumed: 60 },
+  };
+  const ex = examples[currentInst] || examples.inst_001;
+  document.getElementById('log_item').value = ex.item;
+  updateLogUnit();
+  document.getElementById('log_prepared').value = ex.prepared;
+  document.getElementById('log_consumed').value = ex.consumed;
+  document.getElementById('log_meal').value = 'lunch';
+}
+
+async function submitMealLog() {
+  const prepared = parseFloat(document.getElementById('log_prepared').value);
+  const consumed = parseFloat(document.getElementById('log_consumed').value);
+  const item_id  = document.getElementById('log_item').value;
+
+  if (!prepared || isNaN(prepared) || prepared <= 0) {
+    document.getElementById('logResult').innerHTML = '<div class="form-result error">⚠ Please enter a valid Qty Prepared.</div>';
+    return;
+  }
+  if (isNaN(consumed) || consumed < 0) {
+    document.getElementById('logResult').innerHTML = '<div class="form-result error">⚠ Please enter a valid Qty Consumed.</div>';
+    return;
+  }
+  if (consumed > prepared) {
+    document.getElementById('logResult').innerHTML = '<div class="form-result error">⚠ Consumed cannot exceed Prepared.</div>';
+    return;
+  }
+
+  const btn = document.getElementById('logSubmitBtn');
+  const spinner = document.getElementById('logSpinner');
+  btn.disabled = true;
+  spinner.classList.remove('hidden');
+  document.getElementById('logResult').innerHTML = '';
+
+  try {
+    const body = {
+      date:          document.getElementById('log_date').value,
+      meal_type:     document.getElementById('log_meal').value,
+      item_id,
+      item_name:     MENU_ITEMS[item_id]?.name || item_id,
+      prepared_qty:  prepared,
+      consumed_qty:  consumed,
+      weather:       document.getElementById('log_weather').value,
+      special_event: document.getElementById('log_event').checked,
+      auto_assign:   true,
+    };
+
+    const res = await apiPost(`/api/institutions/${currentInst}/log_meal`, body);
+    const wasted = res.wasted_qty;
+    dashboardData = null;
+
+    if (!res.alert) {
+      document.getElementById('logResult').innerHTML = `
+        <div class="form-result info">
+          <strong>ℹ No redistributable surplus detected.</strong><br>
+          Wasted: <strong>${wasted}</strong> ${MENU_ITEMS[item_id]?.unit || 'portions'} — ${wasted < 5 ? 'below the 5-portion threshold' : 'food classified as unsafe (beyond shelf life)'}.<br>
+          <span style="font-size:12px;opacity:0.8">Tip: Try preparing more than you consume (e.g. 300 prepared, 240 consumed).</span>
+        </div>`;
+      return;
+    }
+
+    const a = res.alert;
+    const t = res.task;
+    document.getElementById('logResult').innerHTML = `
+      <div class="form-result success">
+        <strong>✅ Surplus Alert Created!</strong><br>
+        <strong>${wasted}</strong> ${a.unit} of <strong>${a.item_name}</strong> surplus detected.
+        Safety: <span class="badge badge-${a.safety_status}">${a.safety_status}</span>
+        — safe until ${new Date(a.safe_until).toLocaleTimeString()}.
+        ${t ? `<br><br>🤖 <strong>Agent matched:</strong> ${t.matched_recipient_name || 'No match found'}
+          <span class="badge badge-${t.status}" style="margin-left:6px">${t.status}</span>
+          ${t.status === 'matched' ? `<br><button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="navigate('agent')">View Task →</button>` : ''}
+        ` : ''}
+      </div>
+      ${t ? `<details style="margin-top:10px"><summary style="cursor:pointer;font-size:12px;color:var(--accent2)">View Agent Reasoning</summary><div class="reasoning-box" style="margin-top:8px">${t.agent_reasoning}</div></details>` : ''}
+    `;
+    showNotif(`✅ Surplus created: ${wasted} ${a.unit} of ${a.item_name}. ${t?.matched_recipient_name ? 'Matched to ' + t.matched_recipient_name : ''}`);
+  } catch(e) {
+    document.getElementById('logResult').innerHTML = `<div class="form-result error">⚠ Error: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    spinner.classList.add('hidden');
+  }
+}
+
+// ── Surplus Page ──────────────────────────────────────────────────────────────
+async function loadSurplus() {
+  if (!dashboardData) dashboardData = await api(`/api/dashboard/${currentInst}`);
+  const alerts = dashboardData.active_surplus_alerts;
+  const today = new Date().toISOString().split('T')[0];
+  const itemOptions = Object.entries(MENU_ITEMS).map(([id, m]) =>
+    `<option value="${id}">${m.name}</option>`).join('');
+
+  setContent(`
+    <div class="card" style="background:rgba(251,146,60,0.06);border-color:rgba(251,146,60,0.2)">
+      <div style="font-size:13px;color:var(--muted)">
+        <span class="badge badge-safe">Safe</span> Prepared ≤75% of shelf life ago &nbsp;|&nbsp;
+        <span class="badge badge-marginal">Marginal</span> ≤100% — dispatch urgently &nbsp;|&nbsp;
+        <span class="badge badge-unsafe">Unsafe</span> Beyond shelf life — compost only
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>⚠️</span> Active Surplus Alerts (${alerts.length})</div>
+      ${alerts.length === 0
+        ? `<div class="empty-state">No active surplus alerts.<br><span style="font-size:12px">Log a meal record or run the demo to generate alerts.</span></div>`
+        : `<div class="table-wrap"><table>
+            <thead><tr><th>Item</th><th>Qty</th><th>Meal</th><th>Safety</th><th>Safe Until</th><th>Action</th></tr></thead>
+            <tbody>${alerts.map(a => `
+              <tr>
+                <td><strong>${a.item_name}</strong><br><span class="text-muted" style="font-size:11px">${a.institution_name}</span></td>
+                <td>${a.surplus_qty} ${a.unit}</td>
+                <td><span class="badge badge-info">${a.meal_type}</span></td>
+                <td><span class="badge badge-${a.safety_status}">${a.safety_status}</span></td>
+                <td style="font-size:12px">${new Date(a.safe_until).toLocaleTimeString()}</td>
+                <td><button class="btn btn-primary btn-sm" onclick="triggerAgent('${a.id}')">▶ Assign Agent</button></td>
+              </tr>`).join('')}
+            </tbody>
+          </table></div>`
+      }
+    </div>
+
+    <div class="card">
+      <div class="card-title collapsible-header" onclick="toggleCollapse('simForm','simArrow')">
+        <span><span>🧪</span> Simulate Surplus (Quick Test)</span>
+        <span class="collapse-arrow" id="simArrow">▼</span>
+      </div>
+      <div id="simForm" style="display:none">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:14px">
+          Quickly create a surplus alert without going through the full meal log. Useful for testing the agent.
+        </p>
+        <div class="form-grid">
+          <div class="form-group"><label>Food Item</label><select id="sim_item">${itemOptions}</select></div>
+          <div class="form-group"><label>Surplus Qty</label><input type="number" id="sim_qty" value="50" min="6" /></div>
+          <div class="form-group"><label>Meal Type</label>
+            <select id="sim_meal"><option value="breakfast">Breakfast</option><option value="lunch" selected>Lunch</option><option value="dinner">Dinner</option></select>
+          </div>
+          <div class="form-group"><label>Date</label><input type="date" id="sim_date" value="${today}" /></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-warn" id="simBtn" onclick="simulateSurplus()">⚡ Create Surplus & Run Agent</button>
+          <span id="simSpinner" class="hidden"><div class="spinner" style="width:16px;height:16px"></div></span>
+        </div>
+        <div id="simResult"></div>
+      </div>
+    </div>
+  `);
+}
+
+async function simulateSurplus() {
+  const item_id  = document.getElementById('sim_item').value;
+  const qty      = parseFloat(document.getElementById('sim_qty').value);
+  const meal     = document.getElementById('sim_meal').value;
+  const date     = document.getElementById('sim_date').value;
+
+  if (!qty || qty < 6) {
+    document.getElementById('simResult').innerHTML = '<div class="form-result error">⚠ Surplus qty must be at least 6.</div>';
+    return;
+  }
+
+  document.getElementById('simBtn').disabled = true;
+  document.getElementById('simSpinner').classList.remove('hidden');
+
+  try {
+    const item = MENU_ITEMS[item_id];
+    const prepared = qty + Math.round(qty * 0.8);
+    const consumed = Math.round(prepared - qty);
+
+    const res = await apiPost(`/api/institutions/${currentInst}/log_meal`, {
+      date, meal_type: meal, item_id, item_name: item?.name || item_id,
+      prepared_qty: prepared, consumed_qty: consumed, auto_assign: true,
+    });
+
+    dashboardData = null;
+    const a = res.alert;
+    const t = res.task;
+
+    if (!a) {
+      document.getElementById('simResult').innerHTML = `<div class="form-result error">⚠ Could not create alert: ${res.message}</div>`;
+      return;
+    }
+
+    document.getElementById('simResult').innerHTML = `
+      <div class="form-result success">
+        ✅ <strong>Alert created</strong> — ${a.surplus_qty} ${a.unit} of <strong>${a.item_name}</strong>
+        <span class="badge badge-${a.safety_status}" style="margin-left:6px">${a.safety_status}</span>
+        ${t ? `<br>🤖 Agent matched: <strong>${t.matched_recipient_name || 'No match'}</strong> <span class="badge badge-${t.status}">${t.status}</span>` : ''}
+        <br><button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="navigate('surplus')">Refresh Alerts →</button>
+      </div>
+    `;
+    showNotif(`✅ Simulated surplus: ${a.surplus_qty} ${a.unit} of ${a.item_name}`);
+  } catch(e) {
+    document.getElementById('simResult').innerHTML = `<div class="form-result error">⚠ ${e.message}</div>`;
+  } finally {
+    document.getElementById('simBtn').disabled = false;
+    document.getElementById('simSpinner').classList.add('hidden');
+  }
+}
+
+async function triggerAgent(surplusId) {
+  try {
+    showNotif('🤖 Agent is finding the best recipient…');
+    const result = await api(`/api/institutions/${currentInst}/redistribute/${surplusId}`);
+    dashboardData = null;
+    navigate('agent');
+    showNotif(`✅ Agent matched: ${result.task.matched_recipient_name || 'No eligible match found'}`);
+  } catch(e) {
+    showNotif('⚠ Agent error: ' + e.message, 'warn');
+  }
+}
+
+// ── Agent Tasks Page ──────────────────────────────────────────────────────────
+async function loadAgent() {
+  const tasks = await api(`/api/institutions/${currentInst}/tasks`);
+  const byStatus = { matched: 0, dispatched: 0, delivered: 0, rejected: 0, pending: 0 };
+  tasks.forEach(t => { if (byStatus[t.status] !== undefined) byStatus[t.status]++; });
+
+  setContent(`
+    <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:20px">
+      <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value stat-blue">${tasks.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Matched</div><div class="stat-value stat-orange">${byStatus.matched}</div></div>
+      <div class="stat-card"><div class="stat-label">Dispatched</div><div class="stat-value" style="color:var(--warn)">${byStatus.dispatched}</div></div>
+      <div class="stat-card"><div class="stat-label">Delivered</div><div class="stat-value stat-green">${byStatus.delivered}</div></div>
+      <div class="stat-card"><div class="stat-label">Rejected</div><div class="stat-value stat-red">${byStatus.rejected}</div></div>
+    </div>
+
+    <div class="card" style="background:rgba(96,165,250,0.06);border-color:rgba(96,165,250,0.2);margin-bottom:20px">
+      <div style="font-size:13px;color:var(--muted)">
+        🤖 <strong style="color:var(--text)">Autonomous Redistribution Agent</strong> —
+        Scores recipients on: dietary compatibility (hard constraint), response time vs. safety window (30%), reliability (25%), capacity (25%), distance (20%).
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>📋</span> All Redistribution Tasks (${tasks.length})</div>
+      ${tasks.length === 0
+        ? '<div class="empty-state">No tasks yet. Log a meal record or run the demo.</div>'
+        : [...tasks].reverse().map(t => `
+          <div class="card" style="margin-bottom:12px;background:var(--surface2)">
+            <div class="flex items-center justify-between">
+              <div>
+                <strong>${t.item_name}</strong> — ${t.qty} ${t.unit}
+                <span class="badge badge-${t.safety_status}" style="margin-left:8px">${t.safety_status}</span>
+                <span class="badge badge-${t.status}" style="margin-left:6px">${t.status}</span>
+              </div>
+              <div style="display:flex;gap:8px;flex-shrink:0">
+                ${t.status === 'matched'    ? `<button class="btn btn-primary btn-sm" onclick="updateTask('${t.id}','dispatch')">📦 Dispatch</button>` : ''}
+                ${t.status === 'dispatched' ? `<button class="btn btn-primary btn-sm" onclick="updateTask('${t.id}','complete')">✅ Mark Delivered</button>` : ''}
+                ${t.status === 'matched' || t.status === 'dispatched' ? `<button class="btn btn-danger btn-sm" onclick="rejectTask('${t.id}')">✕ Reject</button>` : ''}
+              </div>
+            </div>
+            ${t.matched_recipient_name ? `
+              <div style="margin-top:8px;font-size:12px;color:var(--muted)">
+                📍 Matched to: <strong style="color:var(--text)">${t.matched_recipient_name}</strong>
+                ${t.dispatched_at ? ` · Dispatched: ${new Date(t.dispatched_at).toLocaleTimeString()}` : ''}
+                ${t.delivered_at  ? ` · Delivered: ${new Date(t.delivered_at).toLocaleTimeString()}`  : ''}
+              </div>` : ''}
+            ${t.rejection_reason ? `<div style="margin-top:6px;font-size:12px;color:var(--danger)">Reason: ${t.rejection_reason}</div>` : ''}
+            <details style="margin-top:10px">
+              <summary style="cursor:pointer;font-size:12px;color:var(--accent2)">View Agent Reasoning</summary>
+              <div class="reasoning-box" style="margin-top:8px">${t.agent_reasoning}</div>
+            </details>
+          </div>`).join('')
+      }
+    </div>
+  `);
+}
+
+async function updateTask(taskId, action) {
+  try {
+    await apiPost(`/api/tasks/${taskId}/${action}`);
+    showNotif(`✅ Task ${action === 'dispatch' ? 'dispatched' : 'marked as delivered'}.`);
+    await loadAgent();
+  } catch(e) {
+    showNotif('⚠ Error: ' + e.message, 'warn');
+  }
+}
+
+async function rejectTask(taskId) {
+  const reason = prompt('Rejection reason (optional):') || 'Manually rejected';
+  try {
+    await apiPost(`/api/tasks/${taskId}/reject`, { reason });
+    showNotif('Task rejected.');
+    await loadAgent();
+  } catch(e) {
+    showNotif('⚠ Error: ' + e.message, 'warn');
+  }
+}
+
+// ── Insights Page ─────────────────────────────────────────────────────────────
+async function loadInsights() {
+  const insights = await api(`/api/institutions/${currentInst}/insights`);
+  setContent(`
+    <div class="card" style="background:rgba(74,222,128,0.06);border-color:rgba(74,222,128,0.2);margin-bottom:20px">
+      <div style="font-size:13px;color:var(--muted)">
+        🔄 <strong style="color:var(--text)">Feedback Learning Loop</strong> —
+        Analyses historical preparation vs. consumption, computes MAPE per item, generates dampened bias corrections (50%) fed back into the forecasting engine.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>💡</span> AI-Generated Preparation Recommendations</div>
+      ${insights.length === 0
+        ? '<div class="empty-state">No insight data available for this institution.</div>'
+        : insights.map(i => `
+          <div class="insight-item">
+            <div class="insight-icon ${i.bias_direction === 'over-preparation' ? 'insight-over' : i.bias_direction === 'under-preparation' ? 'insight-under' : 'insight-ok'}">
+              ${i.bias_direction === 'over-preparation' ? '📉' : i.bias_direction === 'under-preparation' ? '📈' : '✅'}
+            </div>
+            <div style="flex:1">
+              <div class="insight-title">${i.item_name}</div>
+              <div class="insight-rec">${i.recommendation}</div>
+              <div class="insight-meta">
+                <span class="badge badge-info">${i.total_records} records</span>
+                <span class="badge badge-info">Avg prepared: ${i.avg_forecast_qty}</span>
+                <span class="badge badge-info">Avg consumed: ${i.avg_actual_qty}</span>
+                <span class="badge ${i.avg_error_pct > 10 ? 'badge-marginal' : 'badge-safe'}">${i.avg_error_pct}% MAPE</span>
+                ${i.bias_correction_pct !== 0 ? `<span class="badge badge-${i.bias_correction_pct < 0 ? 'unsafe' : 'matched'}">Correction: ${i.bias_correction_pct > 0 ? '+' : ''}${i.bias_correction_pct}%</span>` : ''}
+              </div>
+            </div>
+          </div>`).join('')}
+    </div>
+  `);
+}
+
+// ── Report Page ───────────────────────────────────────────────────────────────
+async function loadReport() {
+  const report = await api(`/api/institutions/${currentInst}/report`);
+  setContent(`
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Total Prepared</div><div class="stat-value stat-blue">${report.total_prepared.toLocaleString()}</div><div class="stat-sub">portions · ${report.period_label}</div></div>
+      <div class="stat-card"><div class="stat-label">Waste Rate</div><div class="stat-value stat-red">${report.waste_rate_pct}%</div><div class="stat-sub">${report.total_wasted} portions wasted</div></div>
+      <div class="stat-card"><div class="stat-label">Redistributed</div><div class="stat-value stat-orange">${report.redistributed_qty}</div><div class="stat-sub">portions rescued</div></div>
+      <div class="stat-card"><div class="stat-label">Net Waste Rate</div><div class="stat-value stat-green">${report.net_waste_rate_pct}%</div><div class="stat-sub">after redistribution</div></div>
+      <div class="stat-card"><div class="stat-label">Meals Saved</div><div class="stat-value stat-green">${report.estimated_meals_saved}</div><div class="stat-sub">people fed</div></div>
+      <div class="stat-card"><div class="stat-label">CO₂ Avoided</div><div class="stat-value stat-green">${report.co2_saved_kg} kg</div><div class="stat-sub">CO₂e saved</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>🌍</span> SDG Impact</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div style="background:var(--surface2);border-radius:8px;padding:16px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">SDG 2 — Zero Hunger</div>
+          <div style="font-size:28px;font-weight:800;color:var(--accent)">${report.estimated_meals_saved}</div>
+          <div style="font-size:12px;color:var(--muted)">meals redistributed to those in need</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:16px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">SDG 12 — Responsible Consumption</div>
+          <div style="font-size:28px;font-weight:800;color:var(--accent2)">${report.co2_saved_kg} kg</div>
+          <div style="font-size:12px;color:var(--muted)">CO₂e avoided via food rescue</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>📊</span> Per-Item Analysis</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Item</th><th>Avg Prepared</th><th>Avg Consumed</th><th>MAPE</th><th>Bias</th><th>Correction</th></tr></thead>
+        <tbody>
+          ${report.insights.map(i => `
+            <tr>
+              <td><strong>${i.item_name}</strong></td>
+              <td>${i.avg_forecast_qty}</td>
+              <td>${i.avg_actual_qty}</td>
+              <td><span class="badge ${i.avg_error_pct > 15 ? 'badge-unsafe' : i.avg_error_pct > 8 ? 'badge-marginal' : 'badge-safe'}">${i.avg_error_pct}%</span></td>
+              <td><span class="badge badge-info">${i.bias_direction}</span></td>
+              <td style="color:${i.bias_correction_pct < 0 ? 'var(--danger)' : i.bias_correction_pct > 0 ? 'var(--warn)' : 'var(--accent)'}">
+                ${i.bias_correction_pct !== 0 ? (i.bias_correction_pct > 0 ? '+' : '') + i.bias_correction_pct + '%' : '—'}
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table></div>
+    </div>
+  `);
+}
+
+// ── Recipients Page ───────────────────────────────────────────────────────────
+async function loadRecipients() {
+  const recipients = await api('/api/recipients');
+  setContent(`
+    <div class="card">
+      <div class="card-title"><span>🏠</span> Registered Recipients (${recipients.length})</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+        ${recipients.map(r => `
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <div style="font-size:20px">${r.type === 'shelter' ? '🏠' : r.type === 'ngo' ? '🤝' : r.type === 'food_bank' ? '🏦' : '🍲'}</div>
+              <div>
+                <div style="font-weight:700;font-size:13px">${r.name}</div>
+                <div style="font-size:11px;color:var(--muted)">${r.location}</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+              <div><span class="text-muted">Capacity:</span> <strong>${r.capacity_portions}</strong> portions</div>
+              <div><span class="text-muted">Distance:</span> <strong>${r.distance_km} km</strong></div>
+              <div><span class="text-muted">Response:</span> <strong>${r.avg_response_time_minutes} min</strong></div>
+              <div><span class="text-muted">Reliability:</span>
+                <strong style="color:${r.reliability_score>=0.9?'var(--accent)':r.reliability_score>=0.8?'var(--gold)':'var(--danger)'}">${(r.reliability_score*100).toFixed(0)}%</strong>
+              </div>
+            </div>
+            ${r.dietary_restrictions.length > 0 ? `
+              <div style="margin-top:10px">${r.dietary_restrictions.map(d=>`<span class="tag">${d}</span>`).join('')}</div>` : ''}
+            <div style="margin-top:10px;font-size:11px;color:var(--muted)">📞 ${r.contact_name} · ${r.contact_phone}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+  `);
+}
+
+// ── Demo Runner ───────────────────────────────────────────────────────────────
+async function runDemo() {
+  document.getElementById('demoModal').classList.remove('hidden');
+  document.getElementById('demoContent').innerHTML =
+    '<div class="loading"><div class="spinner"></div> Running full AI workflow…</div>';
+  try {
+    const result = await apiPost('/api/demo/run', { institution_id: currentInst });
+    dashboardData = null;
+    document.getElementById('demoContent').innerHTML = `
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="stat-card"><div class="stat-label">Forecasts</div><div class="stat-value stat-blue">${result.summary.forecasts_generated}</div><div class="stat-sub">items predicted</div></div>
+        <div class="stat-card"><div class="stat-label">Surplus Alerts</div><div class="stat-value stat-orange">${result.summary.surplus_alerts_created}</div><div class="stat-sub">created</div></div>
+        <div class="stat-card"><div class="stat-label">Matched</div><div class="stat-value stat-green">${result.summary.matched}</div><div class="stat-sub">recipients found</div></div>
+        <div class="stat-card"><div class="stat-label">Rejected</div><div class="stat-value stat-red">${result.summary.rejected}</div><div class="stat-sub">no eligible match</div></div>
+      </div>
+      <div style="margin-top:18px">
+        <div class="card-title" style="margin-bottom:12px"><span>📋</span> AGENT TASK DETAILS</div>
+        ${result.tasks.map(t => `
+          <div class="card" style="background:var(--surface2);margin-bottom:12px">
+            <div class="flex items-center justify-between">
+              <strong>${t.item_name}</strong> — ${t.qty} ${t.unit}
+              <span class="badge badge-${t.status}">${t.status}</span>
+            </div>
+            ${t.matched_recipient_name ? `<div style="margin-top:6px;font-size:12px;color:var(--muted)">Matched to: <strong style="color:var(--text)">${t.matched_recipient_name}</strong></div>` : ''}
+            <details style="margin-top:8px">
+              <summary style="cursor:pointer;font-size:12px;color:var(--accent2)">Agent Reasoning</summary>
+              <div class="reasoning-box" style="margin-top:8px">${t.agent_reasoning}</div>
+            </details>
+          </div>`).join('')}
+      </div>
+      <div style="text-align:center;margin-top:16px">
+        <button class="btn btn-primary" onclick="closeModal();navigate('agent')">View All Agent Tasks →</button>
+      </div>
+    `;
+  } catch(e) {
+    document.getElementById('demoContent').innerHTML =
+      `<div class="form-result error">⚠ Demo failed: ${e.message}<br><br>Make sure the backend server is running at ${API}</div>`;
+  }
+}
+
+function closeModal() { document.getElementById('demoModal').classList.add('hidden'); }
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadPage('dashboard');
+</script>
+</body>
+</html>

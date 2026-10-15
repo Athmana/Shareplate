@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8" /></head>
+<body>
+  <script>
+    // In production (Netlify), set API to '' so all /api/* calls go through
+    // the Netlify proxy defined in _redirects → Render backend.
+    // This file is only needed if you open index.html directly in a browser
+    // instead of through Netlify's CDN.
+    window.SHAREPLATE_API_URL = '';
+    window.location.replace('index.html');
+  </script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+# Netlify Redirects
+# Proxies /api/* calls to the Render backend — keeps the frontend on HTTPS
+# and avoids CORS issues entirely.
+# Replace the URL below with your actual Render service URL.
+/api/*  https://shareplate-ai-backend.onrender.com/api/:splat  200
